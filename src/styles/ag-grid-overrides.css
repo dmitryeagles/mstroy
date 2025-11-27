@@ -1,0 +1,40 @@
+.ag-theme-alpine {
+  --ag-row-group-indent-size: 0px !important;
+}
+
+.tree-table-container .ag-ltr .ag-group-cell.ag-row-group-indent-1,
+.tree-table-container .ag-ltr .ag-group-cell.ag-row-group-indent-2,
+.tree-table-container .ag-ltr .ag-group-cell.ag-row-group-indent-3,
+.tree-table-container .ag-ltr .ag-group-cell.ag-row-group-indent-4,
+.tree-table-container .ag-ltr .ag-group-cell.ag-row-group-indent-5 {
+  padding-left: 0 !important;
+}
+
+.tree-table-container .ag-group-value-custom {
+  display: inline-block;
+}
+
+.tree-table-container .ag-group-value-custom[data-level="0"] {
+  padding-left: 0px !important;
+}
+
+.tree-table-container .ag-group-value-custom[data-level="1"] {
+  padding-left: 20px !important;
+}
+
+.tree-table-container .ag-group-value-custom[data-level="2"] {
+  padding-left: 40px !important;
+}
+
+.tree-table-container .ag-group-value-custom[data-level="3"] {
+  padding-left: 60px !important;
+}
+
+.tree-table-container .ag-group-value-custom[data-level="4"] {
+  padding-left: 80px !important;
+}
+
+.tree-table-container .ag-group-value-custom[data-level="5"] {
+  padding-left: 100px !important;
+}
+
