@@ -2,29 +2,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { AgGridVue } from 'ag-grid-vue3'
 import { TreeStore } from '../TreeStore'
-import type { TreeItem, ItemId } from '../types'
+import type { TableProps, GridRow, ItemId } from '../types'
 import type { ColDef } from 'ag-grid-community'
 
-interface Props {
-  items: TreeItem[]
-  mode?: 'view' | 'edit'
-}
-
-const props = withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<TableProps>(), {
   mode: 'view'
 })
 
 let treeStore: TreeStore
-
-interface GridRow {
-  id: ItemId
-  category: string
-  label: string
-  path: string[]
-  level: number
-  hasChildren: boolean
-  rowNumber?: number
-}
 
 const rowData = ref<GridRow[]>([])
 

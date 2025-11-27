@@ -1,14 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import TreeTable from './TreeTable.vue'
-import type { TreeItem } from '../types'
+import { TreeTable } from './index'
+import type { TableProps } from '../types'
 
-interface Props {
-  items: TreeItem[]
-  mode?: 'view' | 'edit'
-}
-
-const props = withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<TableProps>(), {
   mode: 'view'
 })
 
