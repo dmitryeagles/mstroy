@@ -41,34 +41,121 @@ npm run test:coverage
 
 ```
 src/
-├── TreeStore.ts          # Класс для работы с древовидной структурой
-├── TreeStore.test.ts     # Unit-тесты для TreeStore
-├── types.ts              # TypeScript типы
-├── main.ts               # Точка входа приложения
-├── App.vue               # Главный компонент приложения
+├── core/                      # Ядро приложения
+│   ├── interfaces/           # Интерфейсы и абстракции
+│   │   ├── IRepository.ts    # Интерфейс репозитория
+│   │   ├── ITreeService.ts   # Интерфейс сервиса дерева
+│   │   ├── ITreeIndexer.ts   # Интерфейс индексатора
+│   │   └── ITreeBuilder.ts   # Интерфейс построителя дерева
+│   └── indexers/             # Индексация данных
+│       └── TreeIndexer.ts    # Индексатор дерева
+├── repositories/              # Слой доступа к данным
+│   └── TreeRepository.ts     # Репозиторий для работы с данными
+├── services/                  # Бизнес-логика
+│   └── TreeService.ts        # Сервис для работы с деревом
+├── strategies/                # Паттерн Strategy
+│   └── DefaultTreeBuilder.ts # Построитель дерева
+├── adapters/                  # Паттерн Adapter
+│   └── AgGridAdapter.ts      # Адаптер для AG Grid
+├── factories/                 # Паттерн Factory
+│   └── TreeServiceFactory.ts # Фабрика сервисов
+├── composables/               # Vue Composables
+│   └── useTreeTable.ts       # Composable для таблицы
+├── TreeStore.ts              # Фасад для обратной совместимости
+├── TreeStore.test.ts         # Unit-тесты
+├── types.ts                  # TypeScript типы
+├── main.ts                   # Точка входа
+├── App.vue                   # Главный компонент
 └── components/
-    └── TreeTable.vue     # Компонент таблицы с AgGrid
+    ├── TreeTable.vue         # Компонент таблицы
+    └── TableWrapper.vue      # Обертка таблицы
 ```
 
-## Особенности реализации
+## Архитектура и принципы проектирования
 
-### TreeStore
+### SOLID принципы
 
-- **Оптимизация производительности**: Использует `Map` для O(1) доступа к элементам по id
-- **Минимальное количество обходов**: Все структуры данных создаются за один проход по массиву
-- **Полная типизация**: Все методы и свойства типизированы с использованием TypeScript
-- **Unit-тестируемость**: Класс легко тестируется, все зависимости инкапсулированы
+1. **Single Responsibility Principle (SRP)**
+   - `TreeRepository` - только работа с данными
+   - `TreeIndexer` - только индексация и поиск
+   - `TreeService` - только бизнес-логика
+   - `AgGridAdapter` - только адаптация данных для AG Grid
 
-### Методы TreeStore
+2. **Open/Closed Principle (OCP)**
+   - Интерфейсы позволяют расширять функциональность без изменения существующего кода
+   - Новые стратегии построения дерева можно добавлять через `ITreeBuilder`
 
-- `getAll()` - возвращает изначальный массив элементов
-- `getItem(id)` - возвращает элемент по id
-- `getChildren(id)` - возвращает прямых дочерних элементов
-- `getAllChildren(id)` - возвращает всех дочерних элементов рекурсивно
-- `getAllParents(id)` - возвращает цепочку родителей от элемента до корня
-- `addItem(item)` - добавляет новый элемент
-- `removeItem(id)` - удаляет элемент и всех его дочерних
-- `updateItem(item)` - обновляет элемент
+3. **Liskov Substitution Principle (LSP)**
+   - Все реализации интерфейсов полностью взаимозаменяемы
+
+4. **Interface Segregation Principle (ISP)**
+   - Интерфейсы разделены по назначению: `IRepository`, `ITreeIndexer`, `ITreeService`, `ITreeBuilder`
+
+5. **Dependency Inversion Principle (DIP)**
+   - Компоненты зависят от абстракций (интерфейсов), а не от конкретных реализаций
+   - Использование Dependency Injection через фабрику
+
+### Паттерны проектирования
+
+1. **Repository Pattern** (`TreeRepository`)
+   - Абстракция доступа к данным
+   - Централизация логики работы с хранилищем
+
+2. **Strategy Pattern** (`DefaultTreeBuilder`, `ITreeBuilder`)
+   - Различные способы построения дерева
+   - Легко добавлять новые стратегии
+
+3. **Factory Pattern** (`TreeServiceFactory`)
+   - Инкапсуляция логики создания объектов
+   - Упрощение создания сложных зависимостей
+
+4. **Adapter Pattern** (`AgGridAdapter`)
+   - Изоляция логики работы с AG Grid
+   - Упрощение интеграции внешней библиотеки
+
+5. **Facade Pattern** (`TreeStore`)
+   - Упрощенный интерфейс для обратной совместимости
+   - Скрывает сложность внутренней архитектуры
+
+### Особенности реализации
+
+- **Разделение ответственности**: Каждый класс отвечает за одну задачу
+- **Тестируемость**: Все компоненты легко тестируются благодаря интерфейсам
+- **Расширяемость**: Легко добавлять новые реализации через интерфейсы
+- **Производительность**: Использует `Map` для O(1) доступа к элементам
+- **Типобезопасность**: Полная типизация на TypeScript
+
+### API
+
+#### TreeService (рекомендуемый способ)
+
+```typescript
+const service = TreeServiceFactory.createService(items)
+
+service.getAllItems()      // Все элементы
+service.getItem(id)        // Элемент по id
+service.getChildren(id)    // Прямые потомки
+service.getAllChildren(id) // Все потомки рекурсивно
+service.getAllParents(id)  // Все предки до корня
+service.addItem(item)      // Добавить элемент
+service.updateItem(item)   // Обновить элемент
+service.removeItem(id)     // Удалить элемент и потомков
+```
+
+#### TreeStore (фасад для обратной совместимости)
+
+```typescript
+const store = new TreeStore(items)
+
+store.getAll()           // Все элементы
+store.getItem(id)        // Элемент по id
+store.getChildren(id)    // Прямые потомки
+store.getAllChildren(id) // Все потомки
+store.getAllParents(id)  // Все предки
+store.addItem(item)      // Добавить элемент
+store.updateItem(item)   // Обновить элемент
+store.removeItem(id)     // Удалить элемент
+```
 
 ### Vue-компонент
 

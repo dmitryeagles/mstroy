@@ -1,113 +1,29 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { AgGridVue } from 'ag-grid-vue3'
-import { TreeStore } from '../TreeStore'
-import type { TableProps, GridRow, ItemId } from '../types'
-import type { ColDef } from 'ag-grid-community'
+import { TreeServiceFactory } from '../factories/TreeServiceFactory'
+import { AgGridAdapter } from '../adapters/AgGridAdapter'
+import type { TableProps, GridRow } from '../types'
 
 const props = withDefaults(defineProps<TableProps>(), {
   mode: 'view'
 })
 
-let treeStore: TreeStore
-
 const rowData = ref<GridRow[]>([])
 
-const getRowId = (params: any) => String(params.data.id)
-
-const getDataPath = (data: GridRow) => data.path
-
-const buildFlatTree = (store: TreeStore): GridRow[] => {
-  const result: GridRow[] = []
-  const seen = new Set<ItemId>()
-
-  const walk = (id: ItemId, path: string[] = []) => {
-    if (seen.has(id)) return
-    const item = store.getItem(id)
-    if (!item) return
-
-    seen.add(id)
-    const kids = store.getChildren(id)
-    const newPath = [...path, String(id)]
-
-    result.push({
-      id: item.id,
-      category: kids.length > 0 ? 'Группа' : 'Элемент',
-      label: (item.label as string) || String(item.id),
-      path: newPath,
-      level: path.length,
-      hasChildren: kids.length > 0
-    })
-
-    kids.forEach(child => walk(child.id, newPath))
-  }
-
-  store.getAll()
-    .filter(item => item.parent === null)
-    .forEach(item => walk(item.id, []))
-
-  result.forEach((r, i) => {
-    r.rowNumber = i + 1
-  })
-
-  return result
-}
-
-const columnDefs = computed<ColDef[]>(() => [
-  {
-    headerName: '№ п/п',
-    width: 100,
-    cellRenderer: (params: any) => params.node.rowIndex + 1,
-    sortable: false,
-    filter: false,
-    pinned: 'left',
-    suppressMovable: true,
-    lockPosition: true
-  },
-  {
-    headerName: 'Наименование',
-    field: 'label',
-    flex: 1,
-    sortable: false,
-    filter: false,
-    suppressMovable: true
-  }
-])
-
-const defaultColDef: ColDef = {
-  resizable: false,
-  sortable: false,
-  filter: false
-}
-
-const autoGroupColumnDef: ColDef = {
-  headerName: 'Категория',
-  field: 'category',
-  width: 300,
-  cellRenderer: 'agGroupCellRenderer',
-  cellRendererParams: {
-    suppressCount: true,
-    innerRenderer: (params: any) => {
-      if (!params.data) return ''
-      const text = params.data.category === 'Группа' ? 'Группа' : 'Элемент'
-      const span = document.createElement('span')
-      span.className = 'ag-group-value-custom'
-      span.setAttribute('data-level', String(params.node?.level || 0))
-      span.textContent = text
-      return span
-    }
-  },
-  sortable: false,
-  filter: false,
-  suppressMovable: true,
-  lockPosition: true
-}
-
+const getRowId = AgGridAdapter.getRowId
+const getDataPath = AgGridAdapter.getDataPath
+const columnDefs = computed(() => AgGridAdapter.getColumnDefs())
+const defaultColDef = computed(() => AgGridAdapter.getDefaultColDef())
+const autoGroupColumnDef = computed(() => AgGridAdapter.getAutoGroupColumnDef())
 const groupDefaultExpanded = -1
 
 onMounted(() => {
-  treeStore = new TreeStore(props.items)
-  const data = buildFlatTree(treeStore)
+  const treeService = TreeServiceFactory.createService(props.items)
+  const indexer = TreeServiceFactory.createIndexer(props.items)
+  const treeBuilder = TreeServiceFactory.createTreeBuilder(indexer, treeService)
+  
+  const data = treeBuilder.buildFlatTree(props.items)
   rowData.value = data
   console.log('TreeTable data:', data)
 })
